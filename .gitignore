@@ -1,0 +1,19 @@
+# Flutter-related
+.dart_tool/
+.idea/
+.vscode/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/.symlinks/
+android/.gradle/
+android/app/*.keystore
+*.iml
+*.lock
+.DS_Store
+*.log
+pubspec.lock
+.metadata
