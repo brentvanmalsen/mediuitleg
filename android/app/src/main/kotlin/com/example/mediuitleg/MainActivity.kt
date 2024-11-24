@@ -1,4 +1,4 @@
-package com.example.teksthelder
+package com.example.mediuitleg
 
 import io.flutter.embedding.android.FlutterActivity
 

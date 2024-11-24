@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "teksthelder" "\0"
+            VALUE "FileDescription", "mediuitleg" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "teksthelder" "\0"
+            VALUE "InternalName", "mediuitleg" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2024 com.example. All rights reserved." "\0"
-            VALUE "OriginalFilename", "teksthelder.exe" "\0"
-            VALUE "ProductName", "teksthelder" "\0"
+            VALUE "OriginalFilename", "mediuitleg.exe" "\0"
+            VALUE "ProductName", "mediuitleg" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
