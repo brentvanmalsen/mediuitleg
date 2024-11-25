@@ -20,6 +20,7 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
       home: const CameraScreen(),
+      debugShowCheckedModeBanner: false, // Debug banner verwijderd
     );
   }
 }
@@ -120,7 +121,25 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final FlutterTts _flutterTts = FlutterTts();
   String sampleText =
-      "This is sample text that will eventually come from text scanned in an image.";
+      "Dosering";
+
+  @override
+  void initState() {
+    super.initState();
+    _configureAudio();
+  }
+
+  /// Configureer audio-instellingen voor iOS
+  void _configureAudio() {
+    if (Platform.isIOS) {
+      _flutterTts.setIosAudioCategory(
+        IosTextToSpeechAudioCategory.playback,
+        [
+          IosTextToSpeechAudioCategoryOptions.defaultToSpeaker,
+        ],
+      );
+    }
+  }
 
   Future<void> _speakText() async {
     await _flutterTts.setLanguage("nl-NL");
@@ -143,7 +162,10 @@ class _HomePageState extends State<HomePage> {
           children: [
             Text(
               'Voorbeeldtekst:',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontSize: 20),
+              style: Theme.of(context)
+                  .textTheme
+                  .headlineSmall
+                  ?.copyWith(fontSize: 20),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
@@ -155,7 +177,10 @@ class _HomePageState extends State<HomePage> {
               ),
               child: Text(
                 sampleText,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 18),
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyMedium
+                    ?.copyWith(fontSize: 18),
                 textAlign: TextAlign.center,
               ),
             ),
