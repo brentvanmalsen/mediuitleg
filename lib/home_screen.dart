@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'api_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -11,8 +12,9 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final FlutterTts _flutterTts = FlutterTts();
-  String sampleText =
-      'Dosering';
+  final ApiService _apiService = ApiService();
+  String sampleText = 'Dosering'; // Dynamisch aanpasbare tekst
+  String simplifiedText = ''; // Hier wordt de gesimplificeerde tekst opgeslagen
 
   @override
   void initState() {
@@ -32,11 +34,42 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Future<void> _speakText() async {
-    await _flutterTts.setLanguage("nl-NL");
-    await _flutterTts.setPitch(1.2);
-    await _flutterTts.setSpeechRate(0.5);
-    await _flutterTts.speak(sampleText);
+  /// Laat tekst horen via Text-to-Speech
+  Future<void> _speakText(String text) async {
+    try {
+      print(
+          "TTS wordt aangeroepen: $text"); // Debug: Log de tekst die wordt uitgesproken
+      await _flutterTts.setLanguage("nl-NL"); // Zorg dat de taal Nederlands is
+      await _flutterTts.setPitch(1.0); // Normale toonhoogte
+      await _flutterTts
+          .setSpeechRate(0.5); // Langzamer spreektempo voor duidelijke uitleg
+      await _flutterTts.speak(text);
+    } catch (e) {
+      print("TTS Error: $e"); // Debug: Log een fout als TTS niet werkt
+    }
+  }
+
+  /// Genereer uitleg voor het woord en speel het af via TTS
+  Future<void> _explainWord() async {
+    try {
+      // Genereer de versimpelde uitleg
+      final explanation =
+          await _apiService.generateSimplifiedExplanation(sampleText);
+
+      // Update de UI
+      setState(() {
+        simplifiedText = explanation;
+      });
+
+      // Spreek de tekst uit
+      print("Spreek de uitleg uit: $simplifiedText"); // Debug
+      await _speakText(simplifiedText);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+      print("Error in _explainWord: $e");
+    }
   }
 
   @override
@@ -53,7 +86,10 @@ class _HomePageState extends State<HomePage> {
           children: [
             Text(
               'Voorbeeldtekst:',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontSize: 20),
+              style: Theme.of(context)
+                  .textTheme
+                  .headlineSmall
+                  ?.copyWith(fontSize: 20),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
@@ -65,18 +101,31 @@ class _HomePageState extends State<HomePage> {
               ),
               child: Text(
                 sampleText,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 18),
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyMedium
+                    ?.copyWith(fontSize: 18),
                 textAlign: TextAlign.center,
               ),
             ),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: _speakText,
+              onPressed: () =>
+                  _speakText(sampleText), // Spreek originele tekst uit
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 textStyle: const TextStyle(fontSize: 18),
               ),
               child: const Text('Voorlezen'),
+            ),
+            const SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: _explainWord, // Genereer uitleg en versimpel
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                textStyle: const TextStyle(fontSize: 18),
+              ),
+              child: const Text('Uitleg'),
             ),
           ],
         ),
