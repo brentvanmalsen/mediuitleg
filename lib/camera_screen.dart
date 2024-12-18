@@ -1,7 +1,6 @@
 import 'dart:io';
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 class CameraScreen extends StatefulWidget {
   const CameraScreen({super.key});
@@ -11,100 +10,163 @@ class CameraScreen extends StatefulWidget {
 }
 
 class _CameraScreenState extends State<CameraScreen> {
-  XFile? _image;
-  final ImagePicker _picker = ImagePicker();
+  late CameraController _cameraController;
+  late Future<void> _initializeControllerFuture;
+  XFile? _imageFile;
 
   @override
   void initState() {
     super.initState();
-    _requestPermissions();
+    _initializeCamera();
   }
 
-  // Vraag camera-permissies aan
-  Future<void> _requestPermissions() async {
-    var status = await Permission.camera.request();
-    if (status.isDenied) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Camera-toegang is vereist om de app te gebruiken.'),
-        ),
-      );
+  /// Initialiseer de camera
+  Future<void> _initializeCamera() async {
+    final cameras = await availableCameras();
+    final firstCamera = cameras.first;
+
+    _cameraController = CameraController(
+      firstCamera,
+      ResolutionPreset.max,
+      enableAudio: false,
+    );
+
+    _initializeControllerFuture = _cameraController.initialize();
+    setState(() {});
+  }
+
+  /// Maak een foto
+  Future<void> _takePhoto() async {
+    try {
+      await _initializeControllerFuture;
+      final image = await _cameraController.takePicture();
+      setState(() {
+        _imageFile = image;
+      });
+    } catch (e) {
+      print("Error bij foto maken: $e");
     }
   }
 
-  // Selecteer een afbeelding (voor nu placeholder functionaliteit)
-  Future<void> _pickImage() async {
-    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+  /// Foto opnieuw maken
+  void _retakePhoto() {
     setState(() {
-      _image = image;
+      _imageFile = null;
     });
+  }
+
+  @override
+  void dispose() {
+    _cameraController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Maak een afbeelding'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-      ),
-      body: Stack(
-        children: [
-          // Achtergrond: Placeholder voor camera feed of afbeelding
-          GestureDetector(
-            onTap:
-                _pickImage, // Voor nu: afbeelding selecteren door erop te tikken
-            child: Container(
-              width: double.infinity,
-              height: double.infinity,
-              color: Colors.grey[300],
-              child: _image == null
-                  ? const Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          SizedBox(height: 8),
-                          Text(
-                            '(Voor nu afbeelding selecteren)',
-                            style: TextStyle(
-                                fontSize: 17, fontStyle: FontStyle.italic),
-                            textAlign: TextAlign.center,
+      backgroundColor: Colors.black,
+      body: _imageFile == null
+          ? FutureBuilder<void>(
+              future: _initializeControllerFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.done) {
+                  return Stack(
+                    children: [
+                      // Camera preview met crop (BoxFit.cover)
+                      Positioned.fill(
+                        child: ClipRect(
+                          child: FittedBox(
+                            fit: BoxFit.cover,
+                            child: SizedBox(
+                              width:
+                                  _cameraController.value.previewSize?.height,
+                              height:
+                                  _cameraController.value.previewSize?.width,
+                              child: CameraPreview(_cameraController),
+                            ),
                           ),
-                        ],
+                        ),
                       ),
-                    )
-                  : Image.file(
-                      File(_image!.path),
-                      fit: BoxFit.cover,
-                    ),
-            ),
-          ),
+                      // Aangepaste shutter-knop onderaan
+                      Align(
+                        alignment: Alignment.bottomCenter,
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 30),
+                          child: GestureDetector(
+                            onTap: _takePhoto,
+                            child: Container(
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                color: Colors.white, // Binnenkant wit
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Color(0xFFFCDA3D), // Gele randkleur
+                                  width: 8, // Dikte van de rand
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                } else {
+                  return const Center(child: CircularProgressIndicator());
+                }
+              },
+            )
+          : Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Toon de gemaakte foto
+                Container(
+                  margin: const EdgeInsets.all(20),
+                  width: 300,
+                  height: 300,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey, width: 2),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Image.file(
+                    File(_imageFile!.path),
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                const SizedBox(height: 20),
 
-          // Ronde knop onderaan het scherm
-          Positioned(
-            bottom: 30,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: ElevatedButton(
-                onPressed: () {
-                  // Voor nu: navigeren naar de volgende pagina
-                  Navigator.pushNamed(context, '/home');
-                },
-                style: ElevatedButton.styleFrom(
-                  shape: const CircleBorder(),
-                  padding: const EdgeInsets.all(20),
-                  backgroundColor: Colors.deepPurple, // Kleur van de knop
+                // Knoppen: Foto opnieuw maken of verder gaan
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: _retakePhoto,
+                      icon: const Icon(Icons.replay),
+                      label: const Text('Opnieuw maken'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orangeAccent,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 10),
+                      ),
+                    ),
+                    const SizedBox(width: 20),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.pushNamed(context, '/home',
+                            arguments: _imageFile!.path);
+                      },
+                      icon: const Icon(Icons.arrow_forward),
+                      label: const Text('Verder gaan'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 10),
+                      ),
+                    ),
+                  ],
                 ),
-                child: const Icon(
-                  Icons.arrow_forward,
-                  size: 30,
-                  color: Colors.white,
-                ),
-              ),
+              ],
             ),
-          ),
-        ],
-      ),
     );
   }
 }

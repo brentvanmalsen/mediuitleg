@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>We hebben toegang nodig om gemaakte foto's op te slaan in je fotobibliotheek.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>We hebben toegang tot de camera nodig voor het scannen van tekst.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
