@@ -1,47 +1,49 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 
 class ApiService {
   final String apiKey =
-      ''; // Vervang dit met jouw OpenAI API-key
-  final String openAiApiUrl = 'https://api.openai.com/v1/chat/completions';
+      ''; // Vervang dit door jouw OpenAI API-key
+  final String apiUrl = 'https://api.openai.com/v1/chat/completions';
 
-  /// Genereer een versimpelde uitleg voor een woord
-  Future<String> generateSimplifiedExplanation(String word) async {
+  /// Analyseer een afbeelding met een prompt
+  Future<String> analyzeImageWithPrompt(File imageFile, String prompt) async {
     try {
+      // Verwerk de afbeelding naar Base64 om deze te verzenden
+      final bytes = await imageFile.readAsBytes();
+      final base64Image = base64Encode(bytes);
+
+      // API-aanroep
       final response = await http.post(
-        Uri.parse(openAiApiUrl),
+        Uri.parse(apiUrl),
         headers: {
           'Authorization': 'Bearer $apiKey',
           'Content-Type': 'application/json',
         },
         body: jsonEncode({
-          'model': 'gpt-4o',
-          'messages': [
+          "model": "gpt-4o-mini",
+          "messages": [
             {
-              'role': 'system',
-              'content':
-                  'Je bent een assistent in een apotheek die ingewikkelde termen uitlegd in simpel Nederlands'
-            },
-            {
-              'role': 'user',
-              'content':
-                  "Leg uit wat het woord '$word' betekent in de context van een medische verpakking. Gebruik taal op simpel A1-niveau maar sla geen kritische informatie over, leg uit wat belangrijk is, maximaal 35 woorden."
+              "role": "user",
+              "content": [
+                {"type": "text", "text": prompt},
+                {
+                  "type": "image_url",
+                  "image_url": {"url": "data:image/jpeg;base64,$base64Image"}
+                }
+              ]
             }
           ],
-          'max_tokens': 150,
-          'temperature': 0.1,
+          "max_tokens": 300,
         }),
       );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        print(
-            'API Response (Generate Simplified Explanation): $data'); // Debug: Controleer API-respons
-        return data['choices'][0]['message']['content']
-            .trim(); // Zorg dat alleen de tekst wordt geretourneerd
+        return data['choices'][0]['message']['content'];
       } else {
-        throw Exception('Failed to generate explanation: ${response.body}');
+        throw Exception('Failed to analyze image: ${response.body}');
       }
     } catch (e) {
       throw Exception('Error: $e');

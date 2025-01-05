@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
-import 'image_processor.dart'; // Importeer de OCR-logica
 
 class CameraScreen extends StatefulWidget {
   const CameraScreen({super.key});
@@ -56,29 +55,14 @@ class _CameraScreenState extends State<CameraScreen> {
     });
   }
 
-  /// Verwerk de afbeelding: OCR uitvoeren
-  Future<void> _processImage() async {
+  /// Navigeer naar volgende pagina met afbeelding
+  void _goToNextPage() {
     if (_imageFile != null) {
-      // Toon laadindicator tijdens verwerking
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(child: CircularProgressIndicator()),
+      Navigator.pushNamed(
+        context,
+        '/home',
+        arguments: _imageFile!.path,
       );
-
-      try {
-        // Voer OCR uit
-        String result = await processImage(File(_imageFile!.path));
-
-        // Sluit laadindicator en navigeer naar de volgende pagina met tekstresultaat
-        Navigator.of(context).pop();
-        Navigator.pushNamed(context, '/home', arguments: result);
-      } catch (e) {
-        Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Fout tijdens verwerken: $e')),
-        );
-      }
     }
   }
 
@@ -99,7 +83,6 @@ class _CameraScreenState extends State<CameraScreen> {
                 if (snapshot.connectionState == ConnectionState.done) {
                   return Stack(
                     children: [
-                      // Camera preview met crop (BoxFit.cover)
                       Positioned.fill(
                         child: ClipRect(
                           child: FittedBox(
@@ -114,7 +97,6 @@ class _CameraScreenState extends State<CameraScreen> {
                           ),
                         ),
                       ),
-                      // Aangepaste shutter-knop onderaan
                       Align(
                         alignment: Alignment.bottomCenter,
                         child: Padding(
@@ -125,11 +107,11 @@ class _CameraScreenState extends State<CameraScreen> {
                               width: 80,
                               height: 80,
                               decoration: BoxDecoration(
-                                color: Colors.white, // Binnenkant wit
+                                color: Colors.white,
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: Color(0xFFFCDA3D), // Gele randkleur
-                                  width: 8, // Dikte van de rand
+                                  color: const Color(0xFFFCDA3D),
+                                  width: 8,
                                 ),
                               ),
                             ),
@@ -146,7 +128,6 @@ class _CameraScreenState extends State<CameraScreen> {
           : Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Toon de gemaakte foto
                 Container(
                   margin: const EdgeInsets.all(20),
                   width: 300,
@@ -161,8 +142,6 @@ class _CameraScreenState extends State<CameraScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
-
-                // Knoppen: Foto opnieuw maken of verder gaan
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -170,22 +149,12 @@ class _CameraScreenState extends State<CameraScreen> {
                       onPressed: _retakePhoto,
                       icon: const Icon(Icons.replay),
                       label: const Text('Opnieuw maken'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.orangeAccent,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 10),
-                      ),
                     ),
                     const SizedBox(width: 20),
                     ElevatedButton.icon(
-                      onPressed: _processImage, // Verwerk de foto en OCR
+                      onPressed: _goToNextPage,
                       icon: const Icon(Icons.arrow_forward),
                       label: const Text('Verder gaan'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 10),
-                      ),
                     ),
                   ],
                 ),
