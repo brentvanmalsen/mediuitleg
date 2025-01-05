@@ -13,7 +13,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final FlutterTts _flutterTts = FlutterTts();
   final ApiService _apiService = ApiService();
-  String sampleText = 'Dosering'; // Dynamisch aanpasbare tekst
+
   String simplifiedText = ''; // Hier wordt de gesimplificeerde tekst opgeslagen
 
   @override
@@ -37,32 +37,27 @@ class _HomePageState extends State<HomePage> {
   /// Laat tekst horen via Text-to-Speech
   Future<void> _speakText(String text) async {
     try {
-      print(
-          "TTS wordt aangeroepen: $text"); // Debug: Log de tekst die wordt uitgesproken
-      await _flutterTts.setLanguage("nl-NL"); // Zorg dat de taal Nederlands is
-      await _flutterTts.setPitch(1.0); // Normale toonhoogte
-      await _flutterTts
-          .setSpeechRate(0.5); // Langzamer spreektempo voor duidelijke uitleg
+      print("TTS wordt aangeroepen: $text");
+      await _flutterTts.setLanguage("nl-NL");
+      await _flutterTts.setPitch(1.0);
+      await _flutterTts.setSpeechRate(0.5);
       await _flutterTts.speak(text);
     } catch (e) {
-      print("TTS Error: $e"); // Debug: Log een fout als TTS niet werkt
+      print("TTS Error: $e");
     }
   }
 
   /// Genereer uitleg voor het woord en speel het af via TTS
-  Future<void> _explainWord() async {
+  Future<void> _explainWord(String sampleText) async {
     try {
-      // Genereer de versimpelde uitleg
       final explanation =
           await _apiService.generateSimplifiedExplanation(sampleText);
 
-      // Update de UI
       setState(() {
         simplifiedText = explanation;
       });
 
-      // Spreek de tekst uit
-      print("Spreek de uitleg uit: $simplifiedText"); // Debug
+      print("Spreek de uitleg uit: $simplifiedText");
       await _speakText(simplifiedText);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -74,6 +69,11 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    // Haal de gescande tekst op vanuit ModalRoute
+    final String sampleText =
+        ModalRoute.of(context)?.settings.arguments as String? ??
+            'Geen tekst gevonden';
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Uitleg'),
@@ -85,7 +85,7 @@ class _HomePageState extends State<HomePage> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Voorbeeldtekst:',
+              'Gescande Tekst:',
               style: Theme.of(context)
                   .textTheme
                   .headlineSmall
@@ -110,8 +110,7 @@ class _HomePageState extends State<HomePage> {
             ),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () =>
-                  _speakText(sampleText), // Spreek originele tekst uit
+              onPressed: () => _speakText(sampleText),
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 textStyle: const TextStyle(fontSize: 18),
@@ -120,7 +119,7 @@ class _HomePageState extends State<HomePage> {
             ),
             const SizedBox(height: 10),
             ElevatedButton(
-              onPressed: _explainWord, // Genereer uitleg en versimpel
+              onPressed: () => _explainWord(sampleText),
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 textStyle: const TextStyle(fontSize: 18),

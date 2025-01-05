@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'image_processor.dart'; // Importeer de OCR-logica
 
 class CameraScreen extends StatefulWidget {
   const CameraScreen({super.key});
@@ -53,6 +54,32 @@ class _CameraScreenState extends State<CameraScreen> {
     setState(() {
       _imageFile = null;
     });
+  }
+
+  /// Verwerk de afbeelding: OCR uitvoeren
+  Future<void> _processImage() async {
+    if (_imageFile != null) {
+      // Toon laadindicator tijdens verwerking
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      try {
+        // Voer OCR uit
+        String result = await processImage(File(_imageFile!.path));
+
+        // Sluit laadindicator en navigeer naar de volgende pagina met tekstresultaat
+        Navigator.of(context).pop();
+        Navigator.pushNamed(context, '/home', arguments: result);
+      } catch (e) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Fout tijdens verwerken: $e')),
+        );
+      }
+    }
   }
 
   @override
@@ -151,10 +178,7 @@ class _CameraScreenState extends State<CameraScreen> {
                     ),
                     const SizedBox(width: 20),
                     ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.pushNamed(context, '/home',
-                            arguments: _imageFile!.path);
-                      },
+                      onPressed: _processImage, // Verwerk de foto en OCR
                       icon: const Icon(Icons.arrow_forward),
                       label: const Text('Verder gaan'),
                       style: ElevatedButton.styleFrom(
