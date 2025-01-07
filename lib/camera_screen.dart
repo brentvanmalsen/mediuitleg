@@ -20,7 +20,6 @@ class _CameraScreenState extends State<CameraScreen> {
     _initializeCamera();
   }
 
-  /// Initialiseer de camera
   Future<void> _initializeCamera() async {
     final cameras = await availableCameras();
     final firstCamera = cameras.first;
@@ -35,7 +34,6 @@ class _CameraScreenState extends State<CameraScreen> {
     setState(() {});
   }
 
-  /// Maak een foto
   Future<void> _takePhoto() async {
     try {
       await _initializeControllerFuture;
@@ -48,14 +46,12 @@ class _CameraScreenState extends State<CameraScreen> {
     }
   }
 
-  /// Foto opnieuw maken
   void _retakePhoto() {
     setState(() {
       _imageFile = null;
     });
   }
 
-  /// Navigeer naar volgende pagina met afbeelding
   void _goToNextPage() {
     if (_imageFile != null) {
       Navigator.pushNamed(
