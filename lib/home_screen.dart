@@ -14,8 +14,18 @@ class _HomePageState extends State<HomePage> {
   final FlutterTts _flutterTts = FlutterTts();
   final ApiService _apiService = ApiService();
   String simplifiedText = '';
-  bool isAnalyzed = false; // Controleer of de tekst geanalyseerd is
+  bool isAnalyzed = false;
   bool isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final String imagePath =
+          ModalRoute.of(context)?.settings.arguments as String;
+      _analyzeImage(imagePath);
+    });
+  }
 
   /// Analyseer afbeelding
   Future<void> _analyzeImage(String imagePath) async {
@@ -25,16 +35,18 @@ class _HomePageState extends State<HomePage> {
 
     try {
       final explanation = await _apiService.analyzeImageWithPrompt(
-          File(imagePath), "What is shown in this image?");
+        File(imagePath),
+        "Leg uit wat het woord betekent in de context van een medische verpakking. Gebruik taal op simpel A1-niveau maar sla geen kritische informatie over, leg uit wat belangrijk is, maximaal 35 woorden.",
+      );
       print("API Explanation: $explanation");
 
       setState(() {
         simplifiedText = explanation;
-        isAnalyzed = true; // Zet de status op geanalyseerd
+        isAnalyzed = true;
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
+        SnackBar(content: Text('Fout: $e')),
       );
     } finally {
       setState(() {
@@ -47,7 +59,8 @@ class _HomePageState extends State<HomePage> {
   Future<void> _speakText() async {
     if (simplifiedText.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No explanation available to read.')),
+        const SnackBar(
+            content: Text('Geen uitleg beschikbaar om voor te lezen.')),
       );
       return;
     }
@@ -61,7 +74,7 @@ class _HomePageState extends State<HomePage> {
     } catch (e) {
       print("TTS Error: $e");
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error while reading explanation.')),
+        const SnackBar(content: Text('Fout bij het voorlezen van de uitleg.')),
       );
     }
   }
@@ -72,55 +85,91 @@ class _HomePageState extends State<HomePage> {
         ModalRoute.of(context)?.settings.arguments as String;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Versimpel'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Image.file(File(imagePath)),
-            const SizedBox(height: 16),
-            if (isLoading)
-              const Center(child: CircularProgressIndicator())
-            else
-              Column(
-                children: [
-                  ElevatedButton(
-                    onPressed: () => _analyzeImage(imagePath),
-                    child: const Text('Analyseren'),
+      backgroundColor: const Color(0xFF323536),
+      body: Column(
+        children: [
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Image.file(
+                    File(imagePath),
+                    fit: BoxFit.contain,
                   ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.check_circle,
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.check_circle,
+                      color: isAnalyzed ? Colors.green : Colors.grey,
+                      size: 30,
+                    ),
+                    const SizedBox(width: 8),
+                    if (isLoading)
+                      const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    Text(
+                      isAnalyzed ? 'Analyse voltooid' : 'Analyse bezig...',
+                      style: TextStyle(
+                        fontSize: 16,
                         color: isAnalyzed ? Colors.green : Colors.grey,
-                        size: 30,
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        isAnalyzed ? 'Analysis Complete' : 'Wacht op analyseren',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: isAnalyzed ? Colors.green : Colors.grey,
-                        ),
-                      ),
-                    ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 30, left: 16, right: 16),
+            child: Column(
+              children: [
+                ElevatedButton.icon(
+                  onPressed: isAnalyzed ? _speakText : null,
+                  icon: const Icon(Icons.volume_up, color: Colors.white),
+                  label: const Text(
+                    'Uitleg voorlezen',
+                    style: TextStyle(color: Colors.white),
                   ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: isAnalyzed
-                        ? _speakText
-                        : null, // Disable knop als niet geanalyseerd
-                    child: const Text('Lees uitleg'),
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(50),
+                    backgroundColor: const Color(0xFF323536),
+                    side: const BorderSide(color: Color(0xFFFCDA3D), width: 2),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
-                ],
-              ),
-          ],
-        ),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  label: const Text(
+                    'Terug',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(50),
+                    backgroundColor: const Color(0xFF323536),
+                    side: const BorderSide(color: Color(0xFFFCDA3D), width: 2),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
